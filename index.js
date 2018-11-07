@@ -5,6 +5,7 @@ var app = express();
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const MongoClient = require('mongodb').MongoClient;
+var ObjectID = require('mongodb').ObjectID;
 
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
@@ -94,25 +95,21 @@ function runObjectFor(db){
         });
 
         app.post(objectvalue.path+'update', function (req, res) {
-            var creatObject={};
+            var update_id=req.body["_id"];
+            var updateObject={};
             objectvalue.fields.forEach(field => {
                 if(req.body[field])
-                    creatObject[field] = req.body[field];
+                    updateObject[field] = req.body[field];
             });
-
-            var content = fs.readFileSync(objectvalue.name+".json");
-            var jsonContent = JSON.parse(content);
-            
-            jsonContent.forEach(function(arrayUser) {
-                if(arrayUser.id == creatObject.id){
-                    objectvalue.fields.forEach(field => {
-                        if(req.body[field])
-                            arrayUser[field] = req.body[field];
-                    });
+            db.collection(objectvalue.name).updateOne({_id: ObjectID(update_id)}, { $set:updateObject}, function(err,result){
+                if(err){
+                    console.log("update fail");
+                    res.send("update fail : "+err);
                 }
-            });
-            
-            saveFile(objectvalue.name, jsonContent, JSON.stringify(creatObject), res);
+                else
+                    res.send(JSON.stringify(updateObject));
+            })
+           
         });
     });
 
